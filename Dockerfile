@@ -1,6 +1,6 @@
 FROM node:lts
 ENV PORT 3000
-EXPOSE 80
+EXPOSE 80/tcp
 
 WORKDIR /app
 COPY package.json .
