@@ -1,0 +1,79 @@
+# install Azure CLI on the machine
+# https://docs.microsoft.com/en-us/cli/azure/install-azure-cli-yum?view=azure-cli-latest
+
+# ----- Create Kubernetes Cluster ------
+
+# login to Azure cloud
+az login
+
+#  Create resource group and kubernetes cluster
+az group create --name EyalAzranAKS --location "North Europe"
+az aks create -g EyalAzranAKS -n aksCluster --location "North Europe" --node-vm-size Standard_DS2_v2 --node-count 1 --disable-rbac --generate-ssh-keys
+
+# craete private registry
+az acr create --name eyalazranRegistry --resource-group EyalAzranAKS --sku Basic
+
+# create service principal for AKS to use the private registry just created
+az ad sp create-for-rbac --scopes /subscriptions/f030c0c1-8cc5-4ec7-bd1e-977cd5162255/resourcegroups/EyalAzranAKS/providers/Microsoft.ContainerRegistry/registries/eyalazranRegistry --role Contributor --name eyalazranSpAks
+
+# create a kubernetets secret to access the registry
+kubectl create secret docker-registry secretforfegistry.eyalazran --docker-server eyalazranregistry.azurecr.io --docker-email azran4u@gmail.com --docker-username=799ccb35-a856-4f24-805c-2d1705e9a0d1 --docker-password 6471f8df-7bd3-4adf-873a-0b4d5b9391f8
+
+# clean things up - DELETE the cluster
+az group delete --name EyalAzranAKS --yes --no-wait
+
+# ----- Create and push images to registry ------
+
+# build docker image from Dockerfile
+docker build -t hello-world-image .
+
+# pulls image from the public docker hub
+docker pull nginx
+
+# tag the image in order to be able to push it to a private registry
+docker tag hello-world-image eyalazranregistry.azurecr.io/hello-world-image:latest
+
+# login to the docker registry using the appID od the SP
+docker login eyalazranregistry.azurecr.io -u 799ccb35-a856-4f24-805c-2d1705e9a0d1 -p 6471f8df-7bd3-4adf-873a-0b4d5b9391f8
+    
+# push the image
+docker push eyalazranregistry.azurecr.io/hello-world-image
+
+
+# ----- kubectl commands ------
+
+# install kube-cli
+az aks install-cli
+
+# add kube-cli to PATH
+export PATH=$PATH:/usr/local/bin
+
+# Connect to the cluster with kube-cli
+az aks get-credentials --resource-group EyalAzranAKS --name aksCluster
+
+# view resources
+kubectl config get-contexts                     # display list of contexts 
+kubectl config current-context			        # display the current-context
+kubectl config use-context my-cluster-name      # set the default context to my-cluster-name
+kubectl get nodes
+kubectl get services                          # List all services in the namespace
+kubectl get pods --all-namespaces             # List all pods in all namespaces
+kubectl get pods -o wide                      # List all pods in the namespace, with more details
+kubectl get deployment <my-dep>               # List a particular deployment
+kubectl get pods --include-uninitialized      # List all pods in the namespace, including uninitialized ones
+kubectl get pod my-pod -o yaml                # Get a pod's YAML
+kubectl get pod my-pod -o yaml --export       # Get a pod's YAML without cluster specific information
+
+# Describe commands with verbose output
+kubectl describe nodes my-node
+kubectl describe pods my-pod
+
+# Logs
+kubectl logs my-pod
+
+# deploy resources
+kubectl apply -f ./my-manifest.yaml           # create resource(s)
+kubectl apply -f ./my1.yaml -f ./my2.yaml     # create from multiple files
+kubectl apply -f ./dir                        # create resource(s) in all manifest files in dir
+kubectl apply -f https://git.io/vPieo         # create resource(s) from url
+kubectl create -f pod-sample.yaml
