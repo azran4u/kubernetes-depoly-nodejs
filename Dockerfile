@@ -1,5 +1,5 @@
 FROM node:lts
-ENV PORT 80
+ENV PORT 3000
 EXPOSE 80
 
 WORKDIR /app
