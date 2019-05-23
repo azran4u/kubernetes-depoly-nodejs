@@ -1,0 +1,37 @@
+# install Azure CLI for ubuntu
+curl -sL https://aka.ms/InstallAzureCLIDeb | sudo bash
+
+az login
+
+#  Create resource group and kubernetes cluster
+az group create --name EyalAzranAKS --location "North Europe"
+az aks create -g EyalAzranAKS -n aksCluster --location "North Europe" --node-vm-size Standard_DS2_v2 --node-count 1 --disable-rbac --generate-ssh-keys
+az aks use-dev-spaces -g EyalAzranAKS -n aksCluster
+
+# Clone microservice code samples
+git clone https://github.com/Azure/dev-spaces
+cd C:\dev\aks-nodejs\dev-spaces\samples\nodejs\getting-started\webfrontend
+
+# Create kubernetes config files in the public folder
+azds prep --public
+
+# aplly changes to cluster
+azds up
+
+# install kube-cli
+az aks install-cli
+
+# add kube-cli to PATH (for PowerShell)
+$env:path += 'C:\Users\eyala\.azure-kubectl'
+
+# Connect to the cluster with kube-cli
+az aks get-credentials --resource-group EyalAzranAKS --name aksCluster
+kubectl get nodes
+kubectl get pods
+
+# Deploy without AZDS
+
+docker build -t hello-world-image .
+
+# clean things up
+az group delete --name EyalAzranAKS --yes --no-wait
