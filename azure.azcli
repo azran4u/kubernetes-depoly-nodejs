@@ -28,6 +28,9 @@ docker push eyalazranregistry.azurecr.io/hello-world-image
 # create a kubernetets secret to access the registry
 kubectl create secret docker-registry secretforfegistry.eyalazran --docker-server eyalazranregistry.azurecr.io --docker-email azran4u@gmail.com --docker-username=799ccb35-a856-4f24-805c-2d1705e9a0d1 --docker-password 6471f8df-7bd3-4adf-873a-0b4d5b9391f8
 
+# deploy kubernetes resource
+kubectl create -f pod-sample.yaml
+
 # Clone microservice code samples
 git clone https://github.com/Azure/dev-spaces
 cd C:\dev\aks-nodejs\dev-spaces\samples\nodejs\getting-started\webfrontend
