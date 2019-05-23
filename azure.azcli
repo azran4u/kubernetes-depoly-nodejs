@@ -6,32 +6,49 @@ az login
 #  Create resource group and kubernetes cluster
 az group create --name EyalAzranAKS --location "North Europe"
 az aks create -g EyalAzranAKS -n aksCluster --location "North Europe" --node-vm-size Standard_DS2_v2 --node-count 1 --disable-rbac --generate-ssh-keys
-az aks use-dev-spaces -g EyalAzranAKS -n aksCluster
+
+# craete private registry
+az acr create --name eyalazranRegistry --resource-group EyalAzranAKS --sku Basic
+
+# create service principal for AKS to use the private registry just created
+az ad sp create-for-rbac --scopes /subscriptions/f030c0c1-8cc5-4ec7-bd1e-977cd5162255/resourcegroups/EyalAzranAKS/providers/Microsoft.ContainerRegistry/registries/eyalazranRegistry --role Contributor --name eyalazranSpAks
+
+# login to the docker registry using the appID od the SP
+docker login eyalazranregistry.azurecr.io -u 799ccb35-a856-4f24-805c-2d1705e9a0d1 -p 6471f8df-7bd3-4adf-873a-0b4d5b9391f8
+
+# pulls image from the public docker hub
+docker pull nginx
+
+# tag the image in order to be able to push it to a private registry
+docker tag hello-world-image eyalazranregistry.azurecr.io/hello-world-image:latest
+    
+# push the image
+docker push eyalazranregistry.azurecr.io/hello-world-image
+
+# create a kubernetets secret to access the registry
+kubectl create secret docker-registry secretforfegistry.eyalazran --docker-server eyalazranregistry.azurecr.io --docker-email azran4u@gmail.com --docker-username=799ccb35-a856-4f24-805c-2d1705e9a0d1 --docker-password 6471f8df-7bd3-4adf-873a-0b4d5b9391f8
 
 # Clone microservice code samples
 git clone https://github.com/Azure/dev-spaces
 cd C:\dev\aks-nodejs\dev-spaces\samples\nodejs\getting-started\webfrontend
 
-# Create kubernetes config files in the public folder
-azds prep --public
-
-# aplly changes to cluster
-azds up
-
 # install kube-cli
 az aks install-cli
 
 # add kube-cli to PATH (for PowerShell)
-$env:path += 'C:\Users\eyala\.azure-kubectl'
+export PATH=$PATH:/usr/local/bin
 
 # Connect to the cluster with kube-cli
 az aks get-credentials --resource-group EyalAzranAKS --name aksCluster
 kubectl get nodes
 kubectl get pods
 
-# Deploy without AZDS
-
 docker build -t hello-world-image .
+
+# Azure Dev Spaces (Optional)
+az aks use-dev-spaces -g EyalAzranAKS -n aksCluster
+azds prep --public
+azds up
 
 # clean things up
 az group delete --name EyalAzranAKS --yes --no-wait

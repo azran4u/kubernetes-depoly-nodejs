@@ -5,7 +5,7 @@ docker build -t hello-world-image .
 docker run --name hello-world -p 80:3000 hello-world-image
 
 # login to docker hub
-docker login --username=eyala --email=azran4u@gmail.com
+docker login --username=eyala
 
 # show local images
 docker images
